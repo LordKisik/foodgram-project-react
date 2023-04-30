@@ -47,7 +47,7 @@ class Ingredient(models.Model):
     )
 
     def __str__(self):
-        return f'{self.name}, {self.measurement_unit}'
+        return self.name
 
     class Meta:
         verbose_name = 'Ингредиент'
@@ -59,7 +59,7 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Автор рецепта'
+        verbose_name='Автор рецепта',
     )
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -68,10 +68,11 @@ class Recipe(models.Model):
     )
     tags = models.ManyToManyField(
         Tag,
-        verbose_name='Теги'
+        verbose_name='Теги',
+        related_name='tags'
     )
     image = models.ImageField(
-        upload_to='media/',
+        upload_to='dishes/',
         verbose_name='Изображение блюда'
     )
     name = models.CharField(
@@ -94,14 +95,16 @@ class Recipe(models.Model):
         return self.name
 
     class Meta:
-        ordering = ['-pub_date']
+        ordering = ('-pub_date',)
         default_related_name = 'recipe'
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
-                fields=['name', 'author'],
-                name='unique_recipe')]
+                fields=('name', 'author'),
+                name='unique_recipe'
+            ),
+        )
 
 
 class RecipeIngredient(models.Model):
@@ -131,7 +134,7 @@ class RecipeIngredient(models.Model):
         constraints = (
             models.UniqueConstraint(
                 fields=('recipe', 'ingredient'),
-                name='unique_ingredient',
+                name='unique_ingredient'
             ),
         )
 
@@ -218,5 +221,6 @@ class Follow(models.Model):
             ),
             models.CheckConstraint(
                 check=~models.Q(user=models.F('author')),
-                name='no_self_following')
+                name='no_self_following'
+            )
         )

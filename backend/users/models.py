@@ -10,11 +10,12 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     username = models.CharField(max_length=150, unique=True)
-    email = models.EmailField(max_length=150)
+    email = models.EmailField(max_length=150, unique=True)
     password = models.CharField(max_length=254)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=USER)
 
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'password', 'email']
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'username', 'password']
 
     class Meta:
         ordering = ('id',)
@@ -23,10 +24,6 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
-
-    @property
-    def is_user(self):
-        return self.role == self.USER
 
     @property
     def is_admin(self):
