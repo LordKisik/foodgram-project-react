@@ -7,7 +7,7 @@ from recipes.models import Ingredient, Tag
 
 
 def get_reader(file_name):
-    csv_path = os.path.join(settings.BASE_DIR, '../data/', file_name)
+    csv_path = os.path.join(settings.BASE_DIR, 'static/data/', file_name)
     csv_file = open(csv_path, 'r', encoding='utf-8')
     return csv.reader(csv_file, delimiter=',')
 

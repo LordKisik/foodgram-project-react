@@ -11,7 +11,7 @@ class User(AbstractUser):
     last_name = models.CharField(max_length=150)
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(max_length=150, unique=True)
-    password = models.CharField(max_length=254)
+    # password = models.CharField(max_length=254)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=USER)
 
     USERNAME_FIELD = 'email'
