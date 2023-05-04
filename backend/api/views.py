@@ -32,7 +32,7 @@ def shopping_cart(self, request, author):
     ).annotate(
         amounts=Sum('amount', distinct=True)).order_by('amounts')
     today = date.today().strftime("%d-%m-%Y")
-    shopping_list = f'Список покупок на: {today}\n'
+    shopping_list = f'Список покупок на: {today}\n\n'
     for ingredient in sum_ingredients_in_recipes:
         shopping_list += (
             f'{ingredient["ingredient__name"]} '
