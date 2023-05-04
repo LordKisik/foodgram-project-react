@@ -37,6 +37,8 @@ class RecipeAdmin(admin.ModelAdmin):
     def in_favorite(self, obj):
         return obj.favorite.all().count()
 
+    in_favorite.short_description = 'В избранном'
+
 
 class RecipeIngredientAdmin(admin.ModelAdmin):
     list_display = ('id', 'recipe', 'ingredient', 'amount')

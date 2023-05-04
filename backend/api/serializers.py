@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework.exceptions import ValidationError
 from rest_framework import serializers
@@ -22,8 +23,8 @@ class GetUserSerializer(serializers.ModelSerializer):
         return False
 
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
+class UserSerializer(UserCreateSerializer):
+    class Meta(UserCreateSerializer.Meta):
         model = User
         fields = ('email', 'id', 'username', 'first_name', 'last_name',
                   'password')

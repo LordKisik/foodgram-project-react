@@ -1,4 +1,5 @@
 from django.db.models import Sum
+from django_filters.rest_framework import DjangoFilterBackend
 from datetime import date
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -17,7 +18,7 @@ from .serializers import (GetUserSerializer, FavoriteSerializer,
                           RecipeListSerializer, RecipeWriteSerializer,
                           ShoppingCartSerializer)
 
-
+from .filters import IngredientSearchFilter, RecipeFilter
 from recipes.models import (Favorite, Follow, Tag, Ingredient, Recipe,
                             RecipeIngredient, ShoppingCart)
 from users.models import User
@@ -31,12 +32,12 @@ def shopping_cart(self, request, author):
     ).annotate(
         amounts=Sum('amount', distinct=True)).order_by('amounts')
     today = date.today().strftime("%d-%m-%Y")
-    shopping_list = f'Список покупок на: {today}\n\n'
+    shopping_list = f'Список покупок на: {today}\n'
     for ingredient in sum_ingredients_in_recipes:
         shopping_list += (
-            f'{ingredient["ingredient__name"]} - '
-            f'{ingredient["amounts"]} '
-            f'{ingredient["ingredient__measurement_unit"]}\n'
+            f'{ingredient["ingredient__name"]} '
+            f'({ingredient["ingredient__measurement_unit"]}) — '
+            f'{ingredient["amounts"]}\n'
         )
     filename = 'shopping_list.txt'
     response = HttpResponse(shopping_list, content_type='text/plain')
@@ -50,6 +51,14 @@ class UserViewSet(viewsets.ModelViewSet):
     pagination_class = MyPagination
     permission_classes = (IsCurrentUserOrAdminOrReadOnly,)
 
+    def perform_create(self, serializer):
+        username = serializer.validated_data['username']
+        password = serializer.validated_data['password']
+        serializer.save()
+        user = get_object_or_404(User, username=username)
+        user.set_password(password)
+        user.save()
+
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return GetUserSerializer
@@ -61,7 +70,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = GetUserSerializer(user, context={'request': request})
         return Response(serializer.data)
 
-    @action(['post'], detail=False)
+    @action(detail=False, methods=['post'])
     def set_password(self, request):
         serializer = SetPasswordSerializer(
             data=request.data,
@@ -76,7 +85,7 @@ class UserViewSet(viewsets.ModelViewSet):
             user = self.request.user
             user.set_password(serializer.validated_data['new_password'])
             user.save()
-            return Response({'message': 'Пароль успешно изменен.'},
+            return Response({'message': 'Пароль успешно изменен'},
                             status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -130,6 +139,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    filter_backends = (IngredientSearchFilter,)
     search_fields = ('^name',)
 
 
@@ -137,6 +147,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = MyPagination
     permission_classes = (IsAuthorOrAdminOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
@@ -152,7 +164,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if request.method == 'POST':
             if Favorite.objects.filter(author=user,
                                        recipe=recipe).exists():
-                return Response({'errors': 'Рецепт уже добавлен'},
+                return Response({'errors': 'Рецепт уже в избранном'},
                                 status=status.HTTP_400_BAD_REQUEST)
             serializer = FavoriteSerializer(data=request.data)
             if serializer.is_valid(raise_exception=True):
