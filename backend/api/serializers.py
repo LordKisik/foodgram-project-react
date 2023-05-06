@@ -28,16 +28,10 @@ class GetUserSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
-class RecipeFollowSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
-
-
 class RecipeMiniSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
-        fields = ('id', 'name', 'cooking_time', 'image',)
+        fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class FollowSerializer(serializers.ModelSerializer):
