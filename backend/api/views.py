@@ -23,25 +23,47 @@ from .serializers import (FavoriteSerializer, FollowSerializer,
 from users.models import User
 
 
-def shopping_cart(self, request, author):
+# def shopping_cart(self, request, author):
+#     sum_ingredients_in_recipes = RecipeIngredient.objects.filter(
+#         recipe__shopping_cart__author=author
+#     ).values(
+#         'ingredient__name', 'ingredient__measurement_unit'
+#     ).annotate(
+#         amounts=Sum('amount', distinct=True)).order_by('amounts')
+#     today = date.today().strftime("%d-%m-%Y")
+#     shopping_list = f'Список покупок на: {today}\n\n'
+#     for ingredient in sum_ingredients_in_recipes:
+#         shopping_list += (
+#             f'{ingredient["ingredient__name"]} '
+#             f'({ingredient["ingredient__measurement_unit"]}) — '
+#             f'{ingredient["amounts"]}\n'
+#         )
+#     filename = 'shopping_list.txt'
+#     response = HttpResponse(shopping_list, content_type='text/plain')
+#     response['Content-Disposition'] = f'attachment; filename={filename}'
+#     return response
+
+def get_shopping_list_data(author):
     sum_ingredients_in_recipes = RecipeIngredient.objects.filter(
         recipe__shopping_cart__author=author
     ).values(
         'ingredient__name', 'ingredient__measurement_unit'
     ).annotate(
-        amounts=Sum('amount', distinct=True)).order_by('amounts')
+        amounts=Sum('amount', distinct=True)
+    ).order_by('amounts')
+    return sum_ingredients_in_recipes
+
+
+def generate_shopping_list_response(data):
     today = date.today().strftime("%d-%m-%Y")
     shopping_list = f'Список покупок на: {today}\n\n'
-    for ingredient in sum_ingredients_in_recipes:
+    for ingredient in data:
         shopping_list += (
             f'{ingredient["ingredient__name"]} '
             f'({ingredient["ingredient__measurement_unit"]}) — '
             f'{ingredient["amounts"]}\n'
         )
-    filename = 'shopping_list.txt'
-    response = HttpResponse(shopping_list, content_type='text/plain')
-    response['Content-Disposition'] = f'attachment; filename={filename}'
-    return response
+    return HttpResponse(shopping_list, content_type='text/plain')
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -163,7 +185,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                        recipe=recipe).exists():
             return Response({'errors': 'Объект не найден'},
                             status=status.HTTP_404_NOT_FOUND)
-        Favorite.objects.get(author=user, recipe=recipe).delete()
+        get_object_or_404(Favorite, author=user, recipe=recipe).delete()
         return Response({'message': 'Рецепт удалён из избранного'},
                         status=status.HTTP_204_NO_CONTENT)
 
@@ -189,7 +211,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                            recipe=recipe).exists():
             return Response({'errors': 'Объект не найден'},
                             status=status.HTTP_404_NOT_FOUND)
-        ShoppingCart.objects.get(author=user, recipe=recipe).delete()
+        get_object_or_404(ShoppingCart, author=user, recipe=recipe).delete()
         return Response({'message': 'Рецепт удалён из списка покупок'},
                         status=status.HTTP_204_NO_CONTENT)
 
@@ -197,8 +219,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
             methods=['get'],
             permission_classes=[IsAuthenticated])
     def download_shopping_cart(self, request):
-        author = User.objects.get(id=self.request.user.pk)
+        author = get_object_or_404(User, id=self.request.user.pk)
         if author.shopping_cart.exists():
-            return shopping_cart(self, request, author)
+            data = get_shopping_list_data(author)
+            response = generate_shopping_list_response(data)
+            filename = 'shopping_list.txt'
+            response['Content-Disposition'] = (f'attachment; '
+                                               f'filename={filename}')
+            return response
         return Response({'message': 'Список покупок пуст'},
                         status=status.HTTP_404_NOT_FOUND)

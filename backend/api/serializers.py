@@ -2,6 +2,8 @@ from django.shortcuts import get_object_or_404
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.validators import UniqueTogetherValidator
+
 
 from recipes.models import (Favorite, Follow, Ingredient, Recipe,
                             RecipeIngredient, ShoppingCart, Tag)
@@ -82,10 +84,11 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
-    id = serializers.ReadOnlyField(source='ingredient.id')
-    name = serializers.ReadOnlyField(source='ingredient.name')
-    measurement_unit = serializers.ReadOnlyField(
-        source='ingredient.measurement_unit'
+    id = serializers.IntegerField(source='ingredient.id', read_only=True)
+    name = serializers.CharField(source='ingredient.name', read_only=True)
+    measurement_unit = serializers.CharField(
+        source='ingredient.measurement_unit',
+        read_only=True
     )
 
     class Meta:
@@ -135,42 +138,63 @@ class AddIngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'amount')
 
 
-class FavoriteSerializer(serializers.ModelSerializer):
-    name = serializers.ReadOnlyField(
-        source='recipe.name',
-        read_only=True)
-    image = serializers.ImageField(
-        source='recipe.image',
-        read_only=True)
-    cooking_time = serializers.IntegerField(
-        source='recipe.cooking_time',
-        read_only=True)
-    id = serializers.PrimaryKeyRelatedField(
-        source='recipe',
-        read_only=True)
-
+class FavoriteSerializer(serializers.Serializer):
     class Meta:
         model = Favorite
-        fields = ('id', 'name', 'image', 'cooking_time')
+        fields = ('user', 'recipe')
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Favorite.objects.all(),
+                fields=['recipe', 'user'],
+                message='Этот рецепт уже добавлен в избранное'
+            )
+        ]
+# class FavoriteSerializer(serializers.ModelSerializer):
+#     name = serializers.ReadOnlyField(
+#         source='recipe.name',
+#         read_only=True)
+#     image = serializers.ImageField(
+#         source='recipe.image',
+#         read_only=True)
+#     cooking_time = serializers.IntegerField(
+#         source='recipe.cooking_time',
+#         read_only=True)
+#     id = serializers.PrimaryKeyRelatedField(
+#         source='recipe',
+#         read_only=True)
+
+#     class Meta:
+#         model = Favorite
+#         fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
-    name = serializers.ReadOnlyField(
-        source='recipe.name',
-        read_only=True)
-    image = serializers.ImageField(
-        source='recipe.image',
-        read_only=True)
-    cooking_time = serializers.IntegerField(
-        source='recipe.cooking_time',
-        read_only=True)
-    id = serializers.PrimaryKeyRelatedField(
-        source='recipe',
-        read_only=True)
-
     class Meta:
-        model = ShoppingCart
-        fields = ('id', 'name', 'image', 'cooking_time')
+        model = Favorite
+        fields = ('user', 'recipe')
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Favorite.objects.all(),
+                fields=['recipe', 'user'],
+                message='Этот рецепт уже добавлен в список покупок'
+            )
+        ]
+    # name = serializers.ReadOnlyField(
+    #     source='recipe.name',
+    #     read_only=True)
+    # image = serializers.ImageField(
+    #     source='recipe.image',
+    #     read_only=True)
+    # cooking_time = serializers.IntegerField(
+    #     source='recipe.cooking_time',
+    #     read_only=True)
+    # id = serializers.PrimaryKeyRelatedField(
+    #     source='recipe',
+    #     read_only=True)
+
+    # class Meta:
+    #     model = ShoppingCart
+    #     fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
