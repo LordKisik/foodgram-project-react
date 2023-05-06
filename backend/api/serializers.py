@@ -1,10 +1,10 @@
 from django.shortcuts import get_object_or_404
-from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework.exceptions import ValidationError
 from rest_framework import serializers
-from recipes.models import (Favorite, Follow, Ingredient, RecipeIngredient,
-                            Recipe, ShoppingCart, Tag)
+from rest_framework.exceptions import ValidationError
+
+from recipes.models import (Favorite, Follow, Ingredient, Recipe,
+                            RecipeIngredient, ShoppingCart, Tag)
 from users.models import User
 
 
@@ -14,7 +14,9 @@ class GetUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('email', 'id', 'username', 'first_name', 'last_name',
-                  'is_subscribed')
+                  'password', 'is_subscribed')
+        extra_kwargs = {'password': {'write_only': True},
+                        'is_subscribed': {'read_only': True}}
 
     def get_is_subscribed(self, obj):
         user = self.context.get('request').user
@@ -22,12 +24,8 @@ class GetUserSerializer(serializers.ModelSerializer):
             return Follow.objects.filter(user=user, author=obj).exists()
         return False
 
-
-class UserSerializer(UserCreateSerializer):
-    class Meta(UserCreateSerializer.Meta):
-        model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name',
-                  'password')
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)
 
 
 class RecipeFollowSerializer(serializers.ModelSerializer):
@@ -214,12 +212,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return value
 
     def validate_tags(self, value):
-        tags = value
-        if not tags:
+        if not value:
             raise ValidationError(
                 {'tags': 'Необходимо выбрать тег'})
         tags_list = []
-        for tag in tags:
+        for tag in value:
             if tag in tags_list:
                 raise ValidationError(
                     {'tags': 'Теги не должны повторяться'})
@@ -232,16 +229,16 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             instance.recipe_ingredients.all(), many=True).data
         recipe['tags'] = TagSerializer(
             instance.tags.all(), many=True).data
-        recipe['author'] = UserSerializer(
-            instance.author).data
         return recipe
 
     def add_tags_ingredients(self, ingredients, tags, model):
-        for ingredient in ingredients:
-            RecipeIngredient.objects.update_or_create(
-                recipe=model,
-                ingredient=ingredient['id'],
-                amount=ingredient['amount'])
+        recipe_ingredients = [
+            RecipeIngredient(recipe=model,
+                             ingredient=ingredient['id'],
+                             amount=ingredient['amount'])
+            for ingredient in ingredients
+        ]
+        RecipeIngredient.objects.bulk_create(recipe_ingredients)
         model.tags.set(tags)
 
     def create(self, validated_data):

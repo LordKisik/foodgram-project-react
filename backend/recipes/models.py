@@ -1,5 +1,6 @@
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
+
 from users.models import User
 
 
@@ -52,6 +53,12 @@ class Ingredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('name', 'measurement_unit'),
+                name='unique_ingredient'
+            ),
+        )
 
 
 class Recipe(models.Model):
@@ -134,13 +141,12 @@ class RecipeIngredient(models.Model):
         constraints = (
             models.UniqueConstraint(
                 fields=('recipe', 'ingredient'),
-                name='unique_ingredient'
+                name='unique_ingredient_recipes'
             ),
         )
 
 
-class ShoppingCart(models.Model):
-    """Модель списка покупок."""
+class BaseItem(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -149,13 +155,20 @@ class ShoppingCart(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        verbose_name='Рецепт для покупок',
+        verbose_name='Рецепт'
     )
 
     def __str__(self):
         return f'{self.recipe}'
 
     class Meta:
+        abstract = True
+
+
+class ShoppingCart(BaseItem):
+    """Модель списка покупок."""
+
+    class Meta(BaseItem.Meta):
         default_related_name = 'shopping_cart'
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
@@ -167,23 +180,12 @@ class ShoppingCart(models.Model):
         )
 
 
-class Favorite(models.Model):
+class Favorite(BaseItem):
     """Модель избранных рецептов."""
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Подписчик на рецепт')
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        verbose_name='Рецепты')
 
-    def __str__(self):
-        return f'{self.recipe}'
-
-    class Meta:
+    class Meta(BaseItem.Meta):
         default_related_name = 'favorite'
-        verbose_name = 'Избранные рецепты'
+        verbose_name = 'Избранный рецепт'
         verbose_name_plural = 'Избранные рецепты'
         constraints = (
             models.UniqueConstraint(

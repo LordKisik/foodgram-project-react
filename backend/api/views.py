@@ -1,26 +1,25 @@
-from django.db.models import Sum
-from django_filters.rest_framework import DjangoFilterBackend
 from datetime import date
+
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
-from rest_framework.decorators import action
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser.serializers import SetPasswordSerializer
+from recipes.models import (Favorite, Follow, Ingredient, Recipe,
+                            RecipeIngredient, ShoppingCart, Tag)
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
-from .paginations import MyPagination
-from .permissions import (IsCurrentUserOrAdminOrReadOnly,
-                          IsAuthorOrAdminOrReadOnly)
-from .serializers import (GetUserSerializer, FavoriteSerializer,
-                          FollowSerializer, TagSerializer,
-                          UserSerializer, IngredientSerializer,
-                          RecipeListSerializer, RecipeWriteSerializer,
-                          ShoppingCartSerializer)
 
 from .filters import IngredientSearchFilter, RecipeFilter
-from recipes.models import (Favorite, Follow, Tag, Ingredient, Recipe,
-                            RecipeIngredient, ShoppingCart)
+from .paginations import MyPagination
+from .permissions import (IsAuthorOrAdminOrReadOnly,
+                          IsCurrentUserOrAdminOrReadOnly)
+from .serializers import (FavoriteSerializer, FollowSerializer,
+                          GetUserSerializer, IngredientSerializer,
+                          RecipeListSerializer, RecipeWriteSerializer,
+                          ShoppingCartSerializer, TagSerializer)
 from users.models import User
 
 
@@ -47,22 +46,9 @@ def shopping_cart(self, request, author):
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
     pagination_class = MyPagination
     permission_classes = (IsCurrentUserOrAdminOrReadOnly,)
-
-    def perform_create(self, serializer):
-        username = serializer.validated_data['username']
-        password = serializer.validated_data['password']
-        serializer.save()
-        user = get_object_or_404(User, username=username)
-        user.set_password(password)
-        user.save()
-
-    def get_serializer_class(self):
-        if self.action in ('list', 'retrieve'):
-            return GetUserSerializer
-        return UserSerializer
+    serializer_class = GetUserSerializer
 
     @action(detail=False, permission_classes=[IsAuthenticated])
     def me(self, request):
@@ -124,7 +110,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'errors': 'Объект не найден'},
                             status=status.HTTP_404_NOT_FOUND)
         if Follow.objects.filter(author=author, user=user).exists():
-            Follow.objects.get(author=author).delete()
+            Follow.objects.get(author=author, user=user).delete()
             return Response({'message': 'Успешная отписка'},
                             status=status.HTTP_204_NO_CONTENT)
         return Response({'errors': 'Вы не подписаны на данного пользователя'},
@@ -177,7 +163,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                        recipe=recipe).exists():
             return Response({'errors': 'Объект не найден'},
                             status=status.HTTP_404_NOT_FOUND)
-        Favorite.objects.get(recipe=recipe).delete()
+        Favorite.objects.get(author=user, recipe=recipe).delete()
         return Response({'message': 'Рецепт удалён из избранного'},
                         status=status.HTTP_204_NO_CONTENT)
 
@@ -203,7 +189,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                            recipe=recipe).exists():
             return Response({'errors': 'Объект не найден'},
                             status=status.HTTP_404_NOT_FOUND)
-        ShoppingCart.objects.get(recipe=recipe).delete()
+        ShoppingCart.objects.get(author=user, recipe=recipe).delete()
         return Response({'message': 'Рецепт удалён из списка покупок'},
                         status=status.HTTP_204_NO_CONTENT)
 

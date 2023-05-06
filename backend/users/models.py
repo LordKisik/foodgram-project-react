@@ -1,18 +1,24 @@
+from enum import Enum
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-class User(AbstractUser):
-    USER = 'user'
-    ADMIN = 'admin'
-    ROLE_CHOICES = [(USER, 'User'), (ADMIN, 'Admin')]
+class UserRole(Enum):
+    USER = 'Пользователь'
+    ADMIN = 'Администратор'
 
+
+class User(AbstractUser):
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(max_length=150, unique=True)
     password = models.CharField(max_length=254)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=USER)
+    role = models.CharField(
+        max_length=20,
+        choices=[(role.value, role.name) for role in UserRole],
+        default=UserRole.USER.value)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name', 'username', 'password']
@@ -27,4 +33,4 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == self.ADMIN or self.is_superuser
+        return self.role == UserRole.ADMIN or self.is_superuser
