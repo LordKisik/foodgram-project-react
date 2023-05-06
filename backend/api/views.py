@@ -44,14 +44,13 @@ from users.models import User
 #     return response
 
 def get_shopping_list_data(author):
-    sum_ingredients_in_recipes = RecipeIngredient.objects.filter(
+    return RecipeIngredient.objects.filter(
         recipe__shopping_cart__author=author
     ).values(
         'ingredient__name', 'ingredient__measurement_unit'
     ).annotate(
         amounts=Sum('amount', distinct=True)
     ).order_by('amounts')
-    return sum_ingredients_in_recipes
 
 
 def generate_shopping_list_response(data):
