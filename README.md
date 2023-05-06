@@ -1,4 +1,6 @@
 ![foodgram status](https://github.com/LordKisik/foodgram-project-react/actions/workflows/main.yml/badge.svg?branch=master&event=push)
 
-<h1 align="center">foodgram</h1>
+<h1 align="center">foodgram - продуктовый помощник</h1>
 Адрес проекта: http://62.84.119.18/
+
+На этом сайте можно публиковать свои рецепты, подписываться на других авторов, добавлять рецепты в списки покупок и в избранное. Доступна фильтрация по тегам. Реализована функция формирования списка покупок на основе ингредиентов в рецептах, добавленных в список покупок.
