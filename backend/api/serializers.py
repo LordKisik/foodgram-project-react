@@ -168,7 +168,7 @@ class FavoriteSerializer(serializers.Serializer):
 #         fields = ('id', 'name', 'image', 'cooking_time')
 
 
-class ShoppingCartSerializer(serializers.ModelSerializer):
+class ShoppingCartSerializer(serializers.Serializer):
     class Meta:
         model = Favorite
         fields = ('user', 'recipe')
@@ -179,6 +179,7 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
                 message='Этот рецепт уже добавлен в список покупок'
             )
         ]
+    # class ShoppingCartSerializer(serializers.ModelSerializer):
     # name = serializers.ReadOnlyField(
     #     source='recipe.name',
     #     read_only=True)
