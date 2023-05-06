@@ -67,7 +67,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 {"detail": "Учетные данные не были предоставлены."},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        elif serializer.is_valid(raise_exception=True):
+        if serializer.is_valid(raise_exception=True):
             user = self.request.user
             user.set_password(serializer.validated_data['new_password'])
             user.save()
@@ -100,10 +100,10 @@ class UserViewSet(viewsets.ModelViewSet):
             if author == user:
                 return Response({'errors': 'Нельзя подписаться на себя'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            elif subscription.exists():
+            if subscription.exists():
                 return Response({'errors': 'Подписка уже существует'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            elif serializer.is_valid(raise_exception=True):
+            if serializer.is_valid(raise_exception=True):
                 serializer.save(author=author, user=user)
                 return Response(serializer.data,
                                 status=status.HTTP_201_CREATED)
