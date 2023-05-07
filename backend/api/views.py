@@ -23,26 +23,6 @@ from .serializers import (FavoriteSerializer, FollowSerializer,
 from users.models import User
 
 
-# def shopping_cart(self, request, author):
-#     sum_ingredients_in_recipes = RecipeIngredient.objects.filter(
-#         recipe__shopping_cart__author=author
-#     ).values(
-#         'ingredient__name', 'ingredient__measurement_unit'
-#     ).annotate(
-#         amounts=Sum('amount', distinct=True)).order_by('amounts')
-#     today = date.today().strftime("%d-%m-%Y")
-#     shopping_list = f'Список покупок на: {today}\n\n'
-#     for ingredient in sum_ingredients_in_recipes:
-#         shopping_list += (
-#             f'{ingredient["ingredient__name"]} '
-#             f'({ingredient["ingredient__measurement_unit"]}) — '
-#             f'{ingredient["amounts"]}\n'
-#         )
-#     filename = 'shopping_list.txt'
-#     response = HttpResponse(shopping_list, content_type='text/plain')
-#     response['Content-Disposition'] = f'attachment; filename={filename}'
-#     return response
-
 def get_shopping_list_data(author):
     return RecipeIngredient.objects.filter(
         recipe__shopping_cart__author=author
@@ -173,7 +153,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                        recipe=recipe).exists():
                 return Response({'errors': 'Рецепт уже в избранном'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            serializer = FavoriteSerializer(data=request.data)
+            serializer = FavoriteSerializer(data={
+                'recipe': recipe.id,
+                'author': user.id
+            })
             if serializer.is_valid(raise_exception=True):
                 serializer.save(author=user, recipe=recipe)
                 return Response(serializer.data,
@@ -199,7 +182,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                            recipe=recipe).exists():
                 return Response({'errors': 'Рецепт уже в списке покупок'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            serializer = ShoppingCartSerializer(data=request.data)
+            serializer = ShoppingCartSerializer(data={
+                'recipe': recipe.id,
+                'author': user.id
+            })
             if serializer.is_valid(raise_exception=True):
                 serializer.save(author=user, recipe=recipe)
                 return Response(serializer.data,

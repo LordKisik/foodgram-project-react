@@ -138,28 +138,41 @@ class AddIngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'amount')
 
 
-class FavoriteSerializer(serializers.Serializer):
+class BaseRecipeSerializer(serializers.ModelSerializer):
+    name = serializers.ReadOnlyField(
+        source='recipe.name',
+        read_only=True)
+    image = serializers.ImageField(
+        source='recipe.image',
+        read_only=True)
+    cooking_time = serializers.IntegerField(
+        source='recipe.cooking_time',
+        read_only=True)
+
     class Meta:
+        fields = ('id', 'name', 'image', 'cooking_time', 'author', 'recipe')
+
+
+class FavoriteSerializer(BaseRecipeSerializer):
+    class Meta(BaseRecipeSerializer.Meta):
         model = Favorite
-        fields = ('user', 'recipe')
         validators = [
             UniqueTogetherValidator(
                 queryset=Favorite.objects.all(),
-                fields=['recipe', 'user'],
-                message='Этот рецепт уже добавлен в избранное'
+                fields=['author', 'recipe'],
+                message='Рецепт уже в избранном'
             )
         ]
 
 
-class ShoppingCartSerializer(serializers.Serializer):
-    class Meta:
-        model = Favorite
-        fields = ('user', 'recipe')
+class ShoppingCartSerializer(BaseRecipeSerializer):
+    class Meta(BaseRecipeSerializer.Meta):
+        model = ShoppingCart
         validators = [
             UniqueTogetherValidator(
-                queryset=Favorite.objects.all(),
-                fields=['recipe', 'user'],
-                message='Этот рецепт уже добавлен в список покупок'
+                queryset=ShoppingCart.objects.all(),
+                fields=['author', 'recipe'],
+                message='Рецепт уже в списке покупок'
             )
         ]
 
@@ -180,12 +193,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                   'text', 'cooking_time')
 
     def validate_ingredients(self, value):
-        ingredients = value
-        if not ingredients:
+        if not value:
             raise ValidationError(
                 {'ingredients': 'Необходимо выбрать ингредиент'})
         ingredients_list = []
-        for item in ingredients:
+        for item in value:
             ingredient = get_object_or_404(Ingredient, name=item['id'])
             if ingredient in ingredients_list:
                 raise ValidationError(
