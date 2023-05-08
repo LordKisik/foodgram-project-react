@@ -67,4 +67,4 @@ sudo docker-compose exec web python manage.py importcsv
 
 **Автор проекта:**<br/>
 
-**Виталий Никонов** - https://github.com/LordKisik<br/>
+**Виталий Никонов** - https://github.com/LordKisik
