@@ -42,7 +42,8 @@ def generate_shopping_list_response(data):
             f'({ingredient["ingredient__measurement_unit"]}) — '
             f'{ingredient["amounts"]}\n'
         )
-    return HttpResponse(shopping_list, content_type='text/plain')
+    return HttpResponse(shopping_list,
+                        content_type='text/plain; charset=utf-8')
 
 
 class UserViewSet(viewsets.ModelViewSet):
