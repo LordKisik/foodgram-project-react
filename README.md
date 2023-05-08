@@ -28,43 +28,43 @@
 ## Локальный запуск проекта в контейнерах:
 
 - Склонировать репозиторий к себе на компьютер и перейти в корневую папку
-```sh
+```
 git clone git@github.com:LordKisik/foodgram-project-react.git
 ```
-```sh
+```
 cd foodgram-project-react
 ```
 - Создать файл .env с переменными окружения, необходимыми для работы
 
-> DB_ENGINE=django.db.backends.postgresql
-> DB_NAME=postgres
-> POSTGRES_USER=postgres
-> POSTGRES_PASSWORD=postgres
-> DB_HOST=db
-> DB_PORT=5432
-> SECRET_KEY=postgres
+> DB_ENGINE=django.db.backends.postgresql<br/>
+> DB_NAME=postgres<br/>
+> POSTGRES_USER=postgres<br/>
+> POSTGRES_PASSWORD=postgres<br/>
+> DB_HOST=db<br/>
+> DB_PORT=5432<br/>
+> SECRET_KEY=postgres<br/>
 
 - Перейти в папку /infra и запустить сборку контейнеров (запущены контейнеры db, web, nginx)
-```sh
+```
 sudo docker-compose up -d
 ```
-- Внутри контейнера backend создать миграции, выполнить миграции, создать суперюзера, собрать статику и загрузить ингредиенты и теги
-```sh
+- Внутри контейнера backend создать миграции, выполнить миграции, создать суперпользователя, собрать статику и загрузить ингредиенты и теги
+```
 sudo docker-compose exec web python manage.py makemigrations
 ```
-```sh
+```
 sudo docker-compose exec web python manage.py migrate
 ```
-```sh
+```
 sudo docker-compose exec web python manage.py createsuperuser
 ```
-```sh
+```
 sudo docker-compose exec web python manage.py collectstatic --no-input
 ```
-```sh
+```
 sudo docker-compose exec web python manage.py importcsv
 ```
 
 **Автор проекта:**<br/>
 
-**Виталий** - https://github.com/LordKisik<br/>
+**Виталий Никонов** - https://github.com/LordKisik<br/>
